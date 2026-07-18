@@ -1,11 +1,11 @@
 """Resource registry and base definitions."""
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable, TypeAlias
 
 from mcp.types import Resource
 
-ResourceHandler: TypeAlias = Callable[[str], Awaitable[str]]
+type ResourceHandler = Callable[[str], Awaitable[str]]
 
 
 @dataclass(frozen=True)
@@ -21,9 +21,10 @@ class ResourceRegistry:
         self._resources: dict[str, RegisteredResource] = {}
 
     def register(self, resource: Resource, handler: ResourceHandler) -> None:
-        if resource.uri in self._resources:
-            raise ValueError(f"Resource '{resource.uri}' is already registered")
-        self._resources[resource.uri] = RegisteredResource(resource, handler)
+        uri_str = str(resource.uri)
+        if uri_str in self._resources:
+            raise ValueError(f"Resource '{uri_str}' is already registered")
+        self._resources[uri_str] = RegisteredResource(resource, handler)
 
     def list_resources(self) -> list[Resource]:
         return [rr.resource for rr in self._resources.values()]

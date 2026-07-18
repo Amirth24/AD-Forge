@@ -1,12 +1,12 @@
 ---
 name: solution-architect
-description: "Use when designing system architectures, evaluating trade-offs, or producing AWS/Azure/GCP diagrams. Provides structured checklists, diagram conventions, and cost-aware decision guidance."
-version: 1.0.0
+description: "Use when designing system architectures, evaluating trade-offs, or producing AWS/Azure/GCP costed solution designs. Provides structured problem decomposition, DAG-based solution approaches, and live/public pricing data via MCP tools."
+version: 2.0.0
 author: Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [architecture, aws, diagrams, infrastructure, design]
+    tags: [architecture, aws, azure, gcp, cost, diagrams, infrastructure, design]
     related_skills: [aws-architecture-diagrams, eraser-aws-diagrams]
 ---
 
@@ -16,19 +16,44 @@ metadata:
 
 This skill anchors the agent's behavior when acting as a solution architect. It defines:
 - A repeatable design-review checklist
-- Diagram hierarchy conventions (Region → VPC → AZ → Subnet)
-- Cost-awareness heuristics
-- Decision documentation requirements
+- Data-driven problem decomposition into sub-problems
+- DAG-based solution approach representation
+- Live/public cloud pricing lookups (AWS, Azure)
+- A PR/issue-shaped solution document with comments, reviews, and cost summaries
 
 ## When to Use
 
 - Designing greenfield systems or migrating existing ones
-- Evaluating cloud provider services against requirements
+- Evaluating cloud provider services and their costs against requirements
 - Creating or reviewing architecture diagrams
 - Writing RFCs or design docs
-- Estimating infrastructure costs
+- Estimating infrastructure and role/labor costs
 
 Don't use for: purely frontend/UI design (use `claude-design` instead) or low-level algorithm optimization.
+
+## Workflow
+
+1. **Capture the problem** — use `create_problem` with title, description, and tags.
+2. **Decompose** — use the `problem_decomposition` prompt, then call `decompose_problem` to store sub-problems and a solution DAG.
+3. **Create solution documents** — use `create_solution` to produce PR/issue-shaped solution bodies.
+4. **Cost sub-problems** — use `attach_cost_to_solution` for each service/region/role.
+5. **Summarize** — call `summarize_solution_cost` to roll up line items and persist the summary.
+6. **Review** — use `add_solution_review` and `add_solution_comment`, then `update_solution_status`.
+
+## MCP Tools Available
+
+- `create_problem`, `list_problems`, `get_problem`, `delete_problem`
+- `create_solution`, `list_solutions`, `get_solution`, `update_solution_status`, `add_solution_comment`, `add_solution_review`
+- `decompose_problem`, `get_solution_dag`
+- `estimate_cost`, `attach_cost_to_solution`, `summarize_solution_cost`
+- `list_pricing_providers`, `list_pricing_services`
+
+## Pricing Sources
+
+- **aws**: AWS Price List Query API (public, `us-east-1`), e.g. `AmazonEC2`, `AmazonS3`, `AWSLambda`.
+- **azure**: Azure Retail Prices API, e.g. `Virtual Machines`, `Storage`.
+- **gcp**, **databricks**: stub providers; use `manual_rate` in parameters for now.
+- **role**: Public/free role pricing defaults (U.S. BLS OEWS source preferred; currently approximate defaults).
 
 ## Design Checklist
 
@@ -69,8 +94,11 @@ End each checklist with: "Document the top 3 risks and one mitigation per risk."
 
 ## Verification Checklist
 
+- [ ] Problem captured with clear tags
+- [ ] Sub-problems created and DAG stored via `decompose_problem`
+- [ ] Solution document created with PR/issue shape
+- [ ] Cost line items attached and summarized
 - [ ] Design checklist completed with documented risks
-- [ ] Diagram follows hierarchy convention and is exported to a file
-- [ ] Cost estimate includes 1x and 10x scale
+- [ ] Diagram follows hierarchy convention
 - [ ] Simpler alternative is described
 - [ ] Rollback / failure mode documented

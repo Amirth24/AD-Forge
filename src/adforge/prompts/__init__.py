@@ -1,11 +1,12 @@
 """Prompt registry and base definitions."""
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable, TypeAlias
+from typing import Any
 
 from mcp.types import Prompt
 
-PromptHandler: TypeAlias = Callable[[dict | None], Awaitable[str]]
+type PromptHandler = Callable[[dict[str, Any] | None], Awaitable[str]]
 
 
 @dataclass(frozen=True)
@@ -28,7 +29,7 @@ class PromptRegistry:
     def list_prompts(self) -> list[Prompt]:
         return [rp.prompt for rp in self._prompts.values()]
 
-    async def get_prompt(self, name: str, arguments: dict | None = None) -> str:
+    async def get_prompt(self, name: str, arguments: dict[str, Any] | None = None) -> str:
         try:
             registered = self._prompts[name]
         except KeyError:

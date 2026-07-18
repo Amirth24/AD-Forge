@@ -1,11 +1,12 @@
 """Tool registry and base definitions."""
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable, TypeAlias
+from typing import Any
 
 from mcp.types import TextContent, Tool
 
-ToolHandler: TypeAlias = Callable[[dict], Awaitable[list[TextContent]]]
+type ToolHandler = Callable[[dict[str, Any]], Awaitable[list[TextContent]]]
 
 
 @dataclass(frozen=True)
@@ -28,7 +29,7 @@ class ToolRegistry:
     def list_tools(self) -> list[Tool]:
         return [rt.tool for rt in self._tools.values()]
 
-    async def call_tool(self, name: str, arguments: dict) -> list[TextContent]:
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> list[TextContent]:
         try:
             registered = self._tools[name]
         except KeyError:

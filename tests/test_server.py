@@ -1,33 +1,26 @@
 """Tests for server initialization."""
 
-from solution_architect_spl.server import app
-from solution_architect_spl.tools import registry as tool_registry
-from solution_architect_spl.resources import registry as resource_registry
-from solution_architect_spl.prompts import registry as prompt_registry
+from adforge.prompts import registry as prompt_registry
+from adforge.server import app
+from adforge.tools import registry as tool_registry
 
 
 def test_server_app_exists():
-    """The app should be a Server instance."""
     assert app is not None
-    assert app.name == "solution-architect-spl"
+    assert app.name == "adforge"
 
 
-def test_tools_registered():
-    """At least the hello_world tool should be registered."""
+def test_new_tools_registered():
     tools = tool_registry.list_tools()
-    names = [t.name for t in tools]
-    assert "hello_world" in names
+    names = {t.name for t in tools}
+    assert "create_problem" in names
+    assert "create_solution" in names
+    assert "decompose_problem" in names
+    assert "estimate_cost" in names
+    assert "attach_cost_to_solution" in names
 
 
-def test_resources_registered():
-    """At least the principles resource should be registered."""
-    resources = resource_registry.list_resources()
-    uris = [str(r.uri) for r in resources]
-    assert "static://architecture/principles" in uris
-
-
-def test_prompts_registered():
-    """At least the design_review prompt should be registered."""
+def test_prompt_registered():
     prompts = prompt_registry.list_prompts()
-    names = [p.name for p in prompts]
-    assert "design_review" in names
+    names = {p.name for p in prompts}
+    assert "problem_decomposition" in names
