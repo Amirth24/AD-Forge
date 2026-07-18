@@ -1,8 +1,10 @@
-"""AWS public pricing provider.
+"""AWS pricing provider.
 
-Uses the AWS Price List Query API via boto3. No account credentials are required;
-the public endpoint is reached by configuring the pricing client against
-us-east-1.
+Uses the AWS Price List Query API via boto3. This API requires valid AWS
+credentials (IAM permission ``pricing:GetProducts``), but the pricing data itself
+is public. To avoid triggering boto3 credential provider chains that depend on
+``botocore[crt]`` (e.g. AWS CLI ``aws login`` profiles), the client is built
+lazily from explicit environment credentials only.
 """
 
 import os
@@ -11,7 +13,7 @@ from typing import Any
 
 import boto3  # type: ignore[import-untyped]
 from botocore.config import Config  # type: ignore[import-untyped]
-from botocore.handlers import disable_signing  # type: ignore[import-untyped]
+from botocore.exceptions import NoCredentialsError  # type: ignore[import-untyped]
 
 from adforge.pricing.base import PriceQuote, PricingProvider
 from adforge.utils.logging import get_logger
@@ -22,7 +24,7 @@ AWS_PRICING_REGION = os.environ.get("AWS_PRICING_REGION", "us-east-1")
 
 
 class AWSPricingProvider(PricingProvider):
-    """Fetch public AWS pricing for common compute/storage services."""
+    """Fetch AWS pricing for common compute/storage services."""
 
     name = "aws"
 
@@ -31,23 +33,35 @@ class AWSPricingProvider(PricingProvider):
         self._client = None
 
     def _get_client(self) -> Any:
-        """Lazy-build an unsigned pricing client so import time does not need credentials."""
+        """Lazy-build a pricing client using explicit env credentials.
+
+        This bypasses boto3's default credential provider chain, which can fail
+        with a ``botocore[crt]`` dependency error when the host has an
+        ``aws login`` profile configured.
+        """
         if self._client is None:
-            # The AWS Pricing API is public and unsigned, so real credentials are
-            # unnecessary. Provide dummy keys to short-circuit boto3's credential
-            # provider chain, avoiding environments that try to load SSO/WebIdentity
-            # providers which require botocore[crt].
+            access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+            secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+            session_token = os.environ.get("AWS_SESSION_TOKEN")
+            if not access_key or not secret_key:
+                raise NoCredentialsError(
+                    service_name="pricing",
+                    error_message=(
+                        "AWS pricing requires AWS_ACCESS_KEY_ID and "
+                        "AWS_SECRET_ACCESS_KEY. The AWS Price List Query API "
+                        "does not support anonymous requests."
+                    ),
+                )
             session = boto3.Session(
-                aws_access_key_id="adforge",
-                aws_secret_access_key="adforge",
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                aws_session_token=session_token,
             )
-            client = session.client(
+            self._client = session.client(
                 "pricing",
                 region_name="us-east-1",
                 config=Config(retries={"max_attempts": 3, "mode": "adaptive"}),
             )
-            client.meta.events.register("choose-signer.pricing.*", disable_signing)
-            self._client = client
         return self._client
 
     async def list_services(self) -> list[str]:
@@ -78,20 +92,31 @@ class AWSPricingProvider(PricingProvider):
             filters.append({"Field": key, "Type": "TERM_MATCH", "Value": str(value)})
 
         logger.info("Querying AWS pricing", service=service_code, region=region)
-        paginator = self._get_client().get_paginator("get_products")
         prices: list[Decimal] = []
         unit = ""
         source_url = "https://aws.amazon.com/pricing/"
+        notes: str = ""
 
-        for page in paginator.paginate(ServiceCode=service_code, Filters=filters):
-            for price_item in page.get("PriceList", []):
-                try:
-                    on_demand = _extract_on_demand_rate(price_item)
-                    if on_demand:
-                        prices.append(on_demand["price"])
-                        unit = on_demand["unit"]
-                except Exception as exc:  # noqa: BLE001
-                    logger.debug("Could not parse AWS price item", error=str(exc))
+        try:
+            paginator = self._get_client().get_paginator("get_products")
+            for page in paginator.paginate(ServiceCode=service_code, Filters=filters):
+                for price_item in page.get("PriceList", []):
+                    try:
+                        on_demand = _extract_on_demand_rate(price_item)
+                        if on_demand:
+                            prices.append(on_demand["price"])
+                            unit = on_demand["unit"]
+                    except Exception as exc:  # noqa: BLE001
+                        logger.debug("Could not parse AWS price item", error=str(exc))
+        except NoCredentialsError as exc:
+            logger.warning("AWS credentials not available", error=str(exc))
+            notes = (
+                "AWS pricing skipped: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY "
+                "are required for the AWS Price List Query API."
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("AWS pricing query failed", error=str(exc))
+            notes = f"AWS pricing query failed: {exc}"
 
         if not prices:
             return PriceQuote(
@@ -102,7 +127,7 @@ class AWSPricingProvider(PricingProvider):
                 unit="",
                 parameters=parameters,
                 source_url=source_url,
-                notes="No public On-Demand price found for the given filters.",
+                notes=notes or "No On-Demand price found for the given filters.",
             )
 
         best = min(prices)
