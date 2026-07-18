@@ -33,7 +33,14 @@ class AWSPricingProvider(PricingProvider):
     def _get_client(self) -> Any:
         """Lazy-build an unsigned pricing client so import time does not need credentials."""
         if self._client is None:
-            session = boto3.Session()
+            # The AWS Pricing API is public and unsigned, so real credentials are
+            # unnecessary. Provide dummy keys to short-circuit boto3's credential
+            # provider chain, avoiding environments that try to load SSO/WebIdentity
+            # providers which require botocore[crt].
+            session = boto3.Session(
+                aws_access_key_id="adforge",
+                aws_secret_access_key="adforge",
+            )
             client = session.client(
                 "pricing",
                 region_name="us-east-1",

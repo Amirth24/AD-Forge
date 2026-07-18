@@ -1,6 +1,6 @@
 [project]
 name = "adforge"
-version = "0.1.1"
+version = "0.1.2"
 description = "AD Forge — data-driven solution architecture with live cost estimates"
 readme = "README.md"
 license = { text = "MIT" }
