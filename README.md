@@ -87,7 +87,7 @@ uv run pytest tests/ -q
 
 ## Pricing Sources
 
-- **aws** — public AWS Price List Query API (`us-east-1`), no credentials required.
+- **aws** — AWS Price List Query API (`us-east-1`). Requires `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`; credentials are read explicitly to avoid `botocore[crt]` provider chains.
 - **azure** — Azure Retail Prices API, no credentials required.
 - **gcp** / **databricks** — stub providers; supply `manual_rate` in `parameters_json`.
 - **role** — public/free role-pricing defaults; override with `manual_rate`.
