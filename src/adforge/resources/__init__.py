@@ -2,10 +2,11 @@
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import TypeAlias
 
 from mcp.types import Resource
 
-type ResourceHandler = Callable[[str], Awaitable[str]]
+ResourceHandler: TypeAlias = Callable[[str], Awaitable[str]]
 
 
 @dataclass(frozen=True)

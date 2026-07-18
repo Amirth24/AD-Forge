@@ -2,11 +2,11 @@
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeAlias
 
 from mcp.types import Prompt
 
-type PromptHandler = Callable[[dict[str, Any] | None], Awaitable[str]]
+PromptHandler: TypeAlias = Callable[[dict[str, Any] | None], Awaitable[str]]
 
 
 @dataclass(frozen=True)

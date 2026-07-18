@@ -2,11 +2,11 @@
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeAlias
 
 from mcp.types import TextContent, Tool
 
-type ToolHandler = Callable[[dict[str, Any]], Awaitable[list[TextContent]]]
+ToolHandler: TypeAlias = Callable[[dict[str, Any]], Awaitable[list[TextContent]]]
 
 
 @dataclass(frozen=True)

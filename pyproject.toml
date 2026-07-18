@@ -1,12 +1,23 @@
 [project]
 name = "adforge"
-version = "0.1.0"
+version = "0.1.1"
 description = "AD Forge — data-driven solution architecture with live cost estimates"
 readme = "README.md"
-requires-python = ">=3.13"
+license = { text = "MIT" }
+requires-python = ">=3.11"
 authors = [
     { name = "Amirthanathan R", email = "amirth300324@gmail.com" },
     { name = "Dhivya GL", email = "gldhivya1@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "mcp>=1.0.0",
@@ -38,14 +49,14 @@ build-backend = "hatchling.build"
 packages = ["src/adforge"]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
